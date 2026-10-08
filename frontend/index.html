@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Elixir - Production OCR & Intelligent Verification</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Main Top Header -->
+        <header class="app-header">
+            <div class="brand" id="brand-home-btn" title="Click to go to Invoice Processor">
+                <div class="brand-icon">⚡</div>
+                <div>
+                    <h1>Invoice Elixir</h1>
+                    <p class="tagline">Enterprise Invoice OCR & Field Confidence Verification</p>
+                </div>
+            </div>
+
+            <!-- Mode Switcher Tabs -->
+            <nav class="main-nav">
+                <button class="nav-tab active" id="nav-btn-processor">
+                    <span class="nav-icon">📄</span>
+                    <span>Invoice Processor</span>
+                </button>
+                <button class="nav-tab" id="nav-btn-orchestrator">
+                    <span class="nav-icon">🎛️</span>
+                    <span>Orchestrator & Engines</span>
+                </button>
+            </nav>
+
+            <div class="header-badges">
+                <span class="badge badge-primary" id="system-status">System Operational</span>
+                <button class="badge-btn" id="header-orchestrator-badge" title="Open Orchestrator Control Panel">
+                    <span class="pulse-dot"></span>
+                    <span id="engine-count">5 Engines Active</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Toast Notifications Container -->
+        <div id="toast-container" class="toast-container"></div>
+
+        <!-- ========================================================================= -->
+        <!-- VIEW 1: INVOICE PROCESSOR (UPLOAD & SIDE-BY-SIDE RESULT DASHBOARD) -->
+        <!-- ========================================================================= -->
+        <section class="view-section active" id="view-processor">
+            <!-- Upload Panel -->
+            <div class="upload-section" id="upload-panel-container">
+                <div class="drop-zone" id="drop-zone">
+                    <div class="drop-zone-icon">📥</div>
+                    <h3>Upload Invoice Document</h3>
+                    <p>Drag & drop invoice PDF or image, or <label for="file-input" class="browse-btn">Browse File</label></p>
+                    <span class="file-hint">Supported formats: PDF, PNG, JPG, JPEG (Strict size limit &lt; 15 MB)</span>
+                    <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg" style="display: none;">
+                </div>
+
+                <!-- Live Progress Log Overlay -->
+                <div class="progress-card" id="progress-card" style="display: none;">
+                    <div class="progress-header">
+                        <div class="spinner"></div>
+                        <h4>Executing Multi-Engine OCR & Field Verification...</h4>
+                    </div>
+                    <ul class="timeline-log" id="timeline-log"></ul>
+                </div>
+            </div>
+
+            <!-- Single-Page Results Dashboard -->
+            <div class="results-dashboard" id="results-dashboard" style="display: none;">
+                
+                <!-- 1. Top OCR Performance Scorecard Banner -->
+                <div class="ocr-scorecard-banner">
+                    <div class="scorecard-main">
+                        <div class="perf-grade-box" id="perf-grade-box">
+                            <div class="perf-grade" id="perf-grade-val">A+</div>
+                            <div class="perf-grade-label" id="perf-grade-text">EXCELLENT</div>
+                        </div>
+                        <div class="scorecard-meta">
+                            <h3 id="res-doc-title">Invoice Document Processed</h3>
+                            <p id="res-perf-summary">Engine: <strong>Tesseract</strong> • Quality Score: <strong>93.7%</strong> • Document: <strong>Scanned PDF</strong></p>
+                        </div>
+                    </div>
+
+                    <div class="scorecard-stats">
+                        <div class="score-stat-item">
+                            <span class="lbl">Primary Engine</span>
+                            <span class="val highlight" id="stat-engine-used">-</span>
+                        </div>
+                        <div class="score-stat-item">
+                            <span class="lbl">Quality Score</span>
+                            <span class="val" id="stat-quality-score">0%</span>
+                        </div>
+                        <div class="score-stat-item">
+                            <span class="lbl">Raw Confidence</span>
+                            <span class="val" id="stat-ocr-confidence">0%</span>
+                        </div>
+                        <div class="score-stat-item">
+                            <span class="lbl">Validation</span>
+                            <span class="val" id="stat-math-status">-</span>
+                        </div>
+                        <div class="score-stat-item">
+                            <button class="btn btn-secondary btn-sm" onclick="resetForNewUpload()">
+                                ⬆️ Upload Another
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. OCR Engine Decision Rationale & Basis Card -->
+                <div class="engine-basis-card">
+                    <div class="basis-left">
+                        <span class="basis-icon">🧠</span>
+                        <div>
+                            <div class="basis-title">OCR Engine Selection Basis & Routing Rationale</div>
+                            <div class="basis-desc" id="engine-decision-rationale">
+                                Selected based on document structure, resolution contrast, and passing the 75.0% composite quality gate.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="basis-tags" id="engine-basis-tags">
+                        <span class="basis-pill" id="basis-pill-doc-type">📄 Scanned PDF</span>
+                        <span class="basis-pill" id="basis-pill-quality">🎯 Quality: 93.7% (Passed)</span>
+                        <span class="basis-pill" id="basis-pill-math">⚖️ Math: Validated</span>
+                    </div>
+                </div>
+
+                <!-- 3. Integrated Side-by-Side Layout (Left: Text Document Sheet | Right: Side-by-Side Field Cards) -->
+                <div class="single-page-layout">
+                    
+                    <!-- Left Panel: Extracted OCR Text (Raw First, Spatial Document Page) -->
+                    <div class="card document-viewer-card">
+                        <div class="viewer-top-toolbar">
+                            <div class="viewer-mode-switch">
+                                <button class="v-mode-btn active" id="btn-view-raw" onclick="switchDocViewerMode('raw')">
+                                    🔤 Raw Extracted OCR Text (<span id="raw-char-count">0 chars</span>)
+                                </button>
+                                <button class="v-mode-btn" id="btn-view-sheet" onclick="switchDocViewerMode('sheet')">
+                                    📄 Spatial Document Layout (Exact Coordinates)
+                                </button>
+                            </div>
+
+                            <button class="btn-icon-tool" title="Copy Raw Text" onclick="copyRawText()">📋 Copy Text</button>
+                        </div>
+
+                        <!-- Mode 1 (Default): Raw Extracted Text Stream -->
+                        <div class="raw-text-container" id="raw-text-container">
+                            <pre class="raw-text-viewer" id="raw-text-viewer"></pre>
+                        </div>
+
+                        <!-- Mode 2: Spatial Coordinate Positioned Document Canvas -->
+                        <div class="text-doc-sheet-container" id="text-doc-sheet-container" style="display: none;">
+                            <div class="spatial-canvas-wrapper" id="spatial-canvas-wrapper">
+                                <div class="spatial-doc-canvas" id="spatial-doc-canvas">
+                                    <!-- Dynamic Coordinate-Positioned OCR Text Spans Injected by JS -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="preprocessing-tags" id="preprocessing-tags">
+                            <!-- Populated dynamically with applied preprocessing steps -->
+                        </div>
+                    </div>
+
+                    <!-- Right Panel: Side-by-Side Fields & Confidence Dashboard -->
+                    <div class="card fields-dashboard-card">
+                        <div class="card-header">
+                            <div>
+                                <h3>🎯 Extracted Fields & Confidence Breakdown</h3>
+                                <p class="section-desc">Side-by-side verification with real-time confidence scores and validation status.</p>
+                            </div>
+                            <span class="badge badge-primary" id="fields-count-badge">19 Fields Evaluated</span>
+                        </div>
+
+                        <!-- Group 1: 🏛️ GST Identification (Side-by-Side 2 Columns) -->
+                        <div class="group-section-title">🏛️ GST Identification (Highest Priority)</div>
+                        <div class="grid-fields-2col" id="grid-gst-fields">
+                            <!-- Injected in app.js -->
+                        </div>
+
+                        <!-- Group 2: 🏢 Parties & Address Details (Side-by-Side 2 Columns) -->
+                        <div class="group-section-title">🏢 Parties & Contacts</div>
+                        <div class="grid-fields-2col" id="grid-parties-fields">
+                            <!-- Injected in app.js -->
+                        </div>
+
+                        <!-- Group 3: 📄 Invoice Metadata (Side-by-Side 3 Columns) -->
+                        <div class="group-section-title">📄 Invoice Details</div>
+                        <div class="grid-fields-3col" id="grid-metadata-fields">
+                            <!-- Injected in app.js -->
+                        </div>
+
+                        <!-- Group 4: 💰 Amounts & Tax Breakdown (Side-by-Side 3 Columns) -->
+                        <div class="group-section-title">💰 Amounts & Tax Breakdown</div>
+                        <div class="grid-fields-3col" id="grid-amounts-fields">
+                            <!-- Injected in app.js -->
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- 4. Bottom Tabs: Line Items Table & Multi-Engine Audit Log -->
+                <div class="card tabs-card">
+                    <div class="tab-headers">
+                        <button class="tab-btn active" onclick="switchResultTab('line-items-tab', event)">📦 Extracted Line Items</button>
+                        <button class="tab-btn" onclick="switchResultTab('math-validation-tab', event)">💰 Financial Math Consistency</button>
+                        <button class="tab-btn" onclick="switchResultTab('audit-history-tab', event)">📜 Multi-Engine Routing & Audit History</button>
+                    </div>
+
+                    <!-- Tab 1: Line Items -->
+                    <div id="line-items-tab" class="tab-content active">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Description</th>
+                                        <th>HSN/SAC</th>
+                                        <th>Qty</th>
+                                        <th>Unit Price</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="line-items-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tab 2: Math Consistency -->
+                    <div id="math-validation-tab" class="tab-content">
+                        <ul class="warning-list" id="warning-list"></ul>
+                    </div>
+
+                    <!-- Tab 3: Audit History -->
+                    <div id="audit-history-tab" class="tab-content">
+                        <div id="audit-log-content"></div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- ========================================================================= -->
+        <!-- VIEW 2: ORCHESTRATOR & ENGINES MANAGEMENT HUB -->
+        <!-- ========================================================================= -->
+        <section class="view-section" id="view-orchestrator" style="display: none;">
+            
+            <!-- Orchestrator Hero Banner -->
+            <div class="orchestrator-hero card">
+                <div class="hero-content">
+                    <div class="hero-tag">⚡ System Core</div>
+                    <h2>Multi-Engine OCR Orchestration Hub</h2>
+                    <p>
+                        Invoice Elixir automatically inspects uploaded documents, ranks registered OCR engines based on layout complexity,
+                        executes extraction through an adaptive multi-signal quality gate, and dynamically falls back if quality falls below threshold.
+                    </p>
+                </div>
+                <div class="hero-stats-grid">
+                    <div class="stat-pill">
+                        <span class="stat-num" id="stat-total-engines">5</span>
+                        <span class="stat-label">Total Engines</span>
+                    </div>
+                    <div class="stat-pill highlight">
+                        <span class="stat-num" id="stat-active-engines">5</span>
+                        <span class="stat-label">Active (ON)</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-num" id="stat-threshold">75%</span>
+                        <span class="stat-label">Min Quality Gate</span>
+                    </div>
+                    <div class="stat-pill">
+                        <span class="stat-num" id="stat-max-retries">3</span>
+                        <span class="stat-label">Max Retries</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 1: How the Orchestrator Works (Interactive Pipeline Flow) -->
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h3>🧠 How the Orchestrator Works</h3>
+                        <p class="section-desc">Click any stage in the execution pipeline below to inspect its inner algorithms, rules, and decision logic.</p>
+                    </div>
+                    <span class="badge badge-primary">6-Stage Architecture</span>
+                </div>
+
+                <!-- Visual Pipeline Flow Grid -->
+                <div class="pipeline-flow-container">
+                    <div class="pipeline-step-node active" data-step="1" onclick="selectPipelineStep(1)">
+                        <div class="step-num">01</div>
+                        <div class="step-icon">🛡️</div>
+                        <div class="step-title">Intake & Security</div>
+                        <div class="step-subtitle">MIME & Magic Bytes</div>
+                        <div class="step-connector">➔</div>
+                    </div>
+
+                    <div class="pipeline-step-node" data-step="2" onclick="selectPipelineStep(2)">
+                        <div class="step-num">02</div>
+                        <div class="step-icon">🔬</div>
+                        <div class="step-title">Document Inspection</div>
+                        <div class="step-subtitle">Layout & Diagnostics</div>
+                        <div class="step-connector">➔</div>
+                    </div>
+
+                    <div class="pipeline-step-node" data-step="3" onclick="selectPipelineStep(3)">
+                        <div class="step-num">03</div>
+                        <div class="step-icon">🎯</div>
+                        <div class="step-title">Dynamic Scoring</div>
+                        <div class="step-subtitle">Engine Ranking</div>
+                        <div class="step-connector">➔</div>
+                    </div>
+
+                    <div class="pipeline-step-node" data-step="4" onclick="selectPipelineStep(4)">
+                        <div class="step-num">04</div>
+                        <div class="step-icon">⚡</div>
+                        <div class="step-title">Execution & Quality Gate</div>
+                        <div class="step-subtitle">Fallback Retry Loop</div>
+                        <div class="step-connector">➔</div>
+                    </div>
+
+                    <div class="pipeline-step-node" data-step="5" onclick="selectPipelineStep(5)">
+                        <div class="step-num">05</div>
+                        <div class="step-icon">🏛️</div>
+                        <div class="step-title">GSTIN & Entities</div>
+                        <div class="step-subtitle">Mod-36 Verification</div>
+                        <div class="step-connector">➔</div>
+                    </div>
+
+                    <div class="pipeline-step-node" data-step="6" onclick="selectPipelineStep(6)">
+                        <div class="step-num">06</div>
+                        <div class="step-icon">⚖️</div>
+                        <div class="step-title">Math & Audit</div>
+                        <div class="step-subtitle">Tax Reconciliation</div>
+                    </div>
+                </div>
+
+                <!-- Interactive Step Detail Card -->
+                <div class="step-detail-box" id="step-detail-box">
+                    <div class="step-detail-header">
+                        <span class="badge badge-primary" id="step-badge">Stage 01</span>
+                        <h4 id="step-detail-title">Intake & Security Verification</h4>
+                    </div>
+                    <p id="step-detail-desc">Enforces strict file constraints, validates file size (&lt; 15 MB), inspects binary magic bytes, and sanitizes filenames to prevent malicious injection.</p>
+                    <div class="step-tech-specs" id="step-tech-specs">
+                        <!-- Dynamic Technical Bullets -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Engine Management Control Center (Turn ON / OFF) -->
+            <div class="card engines-control-card">
+                <div class="card-header">
+                    <div>
+                        <h3>🎛️ OCR Engines Control Center</h3>
+                        <p class="section-desc">View real-time engine availability and toggle individual OCR engines ON or OFF dynamically without restarting the server.</p>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" id="btn-refresh-engines" onclick="loadOrchestratorState()">
+                        🔄 Refresh Engines Status
+                    </button>
+                </div>
+
+                <!-- Engines Grid Container -->
+                <div class="engines-grid" id="engines-grid">
+                    <div class="loading-placeholder">Loading OCR engine plugins...</div>
+                </div>
+            </div>
+
+            <!-- Section 3: Orchestrator Settings & Thresholds -->
+            <div class="grid-2col">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>⚙️ Quality Gate & Fallback Settings</h3>
+                    </div>
+                    <p class="section-desc">Configure the minimum quality score required before an OCR result is accepted, and the maximum fallback retries allowed.</p>
+                    
+                    <form id="settings-form" class="settings-form" onsubmit="handleSettingsSave(event)">
+                        <div class="form-group">
+                            <div class="label-row">
+                                <label for="setting-threshold">OCR Acceptance Threshold:</label>
+                                <span class="val-badge" id="threshold-val-display">75.0%</span>
+                            </div>
+                            <input type="range" id="setting-threshold" min="10" max="95" step="1" value="75" oninput="document.getElementById('threshold-val-display').textContent = this.value + '.0%'">
+                            <span class="field-hint">If an engine's composite quality score is below this threshold, the next ranked engine will automatically be attempted.</span>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="label-row">
+                                <label for="setting-retries">Max Fallback Retries:</label>
+                                <span class="val-badge" id="retries-val-display">3</span>
+                            </div>
+                            <input type="range" id="setting-retries" min="1" max="5" step="1" value="3" oninput="document.getElementById('retries-val-display').textContent = this.value">
+                            <span class="field-hint">Maximum number of alternative enabled engines the orchestrator will try if quality checks fail.</span>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary" id="btn-save-settings">💾 Save Orchestrator Settings</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Section 4: Live Dynamic Routing Simulator -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>🧪 Live Engine Routing Simulator</h3>
+                    </div>
+                    <p class="section-desc">Test how the orchestrator evaluates document characteristics and scores enabled engines in real time.</p>
+
+                    <div class="sim-controls">
+                        <div class="sim-row">
+                            <label>Document Type:</label>
+                            <div class="segmented-control">
+                                <button type="button" class="segment-btn active" data-doctype="Scanned PDF" onclick="setSimDocType('Scanned PDF', event)">Scanned PDF / Image</button>
+                                <button type="button" class="segment-btn" data-doctype="Digital PDF" onclick="setSimDocType('Digital PDF', event)">Digital Vector PDF</button>
+                            </div>
+                        </div>
+
+                        <div class="sim-checkboxes">
+                            <label class="custom-checkbox">
+                                <input type="checkbox" id="sim-has-tables" onchange="runSimulation()">
+                                <span>Contains Tables / Grid Structure (+15 Paddle/Surya)</span>
+                            </label>
+                            <label class="custom-checkbox">
+                                <input type="checkbox" id="sim-is-noisy" onchange="runSimulation()">
+                                <span>Noisy / Low Contrast (+10 EasyOCR/docTR)</span>
+                            </label>
+                            <label class="custom-checkbox">
+                                <input type="checkbox" id="sim-high-skew" onchange="runSimulation()">
+                                <span>Skewed Angle (&gt;5°) (+8 Paddle/Surya)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="sim-results-container">
+                        <div class="sim-header">
+                            <span>Engine</span>
+                            <span>Score</span>
+                            <span>Routing Rationale</span>
+                        </div>
+                        <div class="sim-list" id="sim-results-list">
+                            <!-- Populated dynamically via simulator API -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>Invoice Elixir — Production OCR & Multi-Engine Pipeline Orchestration</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
